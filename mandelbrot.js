@@ -2,14 +2,19 @@
 let zoom = 1;
 let centerX = -0.7463;
 let centerY = 0.1102;
-
 const width = 80;
 const height = 40;
 const chars = ' .:-=+*#%@';
+let frameCount = 0;
+const maxFrames = 100;
 
 function render() {
+  if (frameCount >= maxFrames) {
+    return;
+  }
+  
   console.clear();
-  console.log(`🌀 Mandelbrot Zoom: ${zoom.toFixed(1)}x\n`);
+  console.log(`🌀 Mandelbrot Zoom: ${zoom.toFixed(1)}x (Frame ${frameCount + 1}/${maxFrames})\n`);
   
   for (let y = 0; y < height; y++) {
     let line = '';
@@ -35,8 +40,9 @@ function render() {
   }
   
   zoom *= 1.15;
+  frameCount++;
   
-  setTimeout(render, 150);
+  setTimeout(render, 50);
 }
 
 render();
