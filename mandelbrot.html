@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌀 Mandelbrot Fractal Zoom</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #000;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    
+    #container {
+      background: #111;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+    }
+    
+    #info {
+      text-align: center;
+      margin-bottom: 15px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    #fractal {
+      line-height: 1.2;
+      letter-spacing: 2px;
+      font-size: 12px;
+      white-space: pre;
+      text-align: center;
+    }
+    
+    #controls {
+      margin-top: 20px;
+      text-align: center;
+    }
+    
+    button {
+      background: #0f0;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    button:hover {
+      background: #0c0;
+    }
+    
+    button:active {
+      background: #090;
+    }
+    
+    button:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="info">🌀 Mandelbrot Fractal Zoom</div>
+    <pre id="fractal"></pre>
+    <div id="controls">
+      <button id="pauseBtn">pause</button>
+      <button id="resetBtn">reset</button>
+      <button id="nextPointBtn">next location</button>
+      <button id="speedUpBtn">speed up</button>
+      <button id="speedDownBtn">speed down</button>
+    </div>
+  </div>
+
+  <script>
+    let zoom = 1;
+    let centerX = -0.7463;
+    let centerY = 0.1102;
+    const width = 80;
+    const height = 40;
+    const chars = ' .:-=+*#%@';
+    let isPaused = false;
+    let speed = 100;
+    let timeoutId = null;
+    const maxZoom = 100000000;
+
+    const interestingPoints = [
+      { x: -0.7463, y: 0.1102 },  // 나선형 구조
+      { x: -0.7269, y: 0.1889 },  // 복잡한 패턴
+      { x: 0.001643721971153, y: 0.822467633298876 }, // 미니 만델브로트
+      { x: -0.8, y: 0.156 },      // 해마 계곡
+      { x: -0.75, y: 0.1 }        // 나선
+    ];
+    let currentPointIndex = 0;
+    
+    const fractalElement = document.getElementById('fractal');
+    const infoElement = document.getElementById('info');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const nextPointBtn = document.getElementById('nextPointBtn');
+    const speedUpBtn = document.getElementById('speedUpBtn');
+    const speedDownBtn = document.getElementById('speedDownBtn');
+    
+    function render() {
+      if (isPaused) return;
+
+      if (zoom > maxZoom) {
+        currentPointIndex = (currentPointIndex + 1) % interestingPoints.length;
+        centerX = interestingPoints[currentPointIndex].x;
+        centerY = interestingPoints[currentPointIndex].y;
+        zoom = 1;
+      }
+      
+      infoElement.textContent = `🌀 Mandelbrot Zoom: ${zoom.toExponential(2)} | Speed: ${speed}ms | Point: ${currentPointIndex + 1}/${interestingPoints.length}`;
+      
+      let output = '';
+      for (let y = 0; y < height; y++) {
+        let line = '';
+        for (let x = 0; x < width; x++) {
+          const real = centerX + (x / width - 0.5) * (3 / zoom);
+          const imag = centerY + (y / height - 0.5) * (2 / zoom);
+          
+          let zr = 0, zi = 0;
+          let iterations = 0;
+
+          const maxIter = Math.min(200 + Math.floor(Math.log10(zoom) * 100), 2000);
+          
+          while (iterations < maxIter && zr*zr + zi*zi < 4) {
+            const temp = zr*zr - zi*zi + real;
+            zi = 2*zr*zi + imag;
+            zr = temp;
+            iterations++;
+          }
+          
+          const charIndex = Math.floor(iterations / maxIter * (chars.length - 1));
+          line += chars[charIndex];
+        }
+        output += line + '\n';
+      }
+      
+      fractalElement.textContent = output;
+      zoom *= 1.15;
+      
+      timeoutId = setTimeout(render, speed);
+    }
+    
+    pauseBtn.addEventListener('click', () => {
+      isPaused = !isPaused;
+      pauseBtn.textContent = isPaused ? 'continue' : 'pause';
+      
+      if (!isPaused) {
+        render();
+      } else {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
+    });
+    
+    resetBtn.addEventListener('click', () => {
+      zoom = 1;
+      currentPointIndex = 0;
+      centerX = interestingPoints[0].x;
+      centerY = interestingPoints[0].y;
+      isPaused = false;
+      pauseBtn.textContent = 'pause';
+      if (timeoutId) clearTimeout(timeoutId);
+      render();
+    });
+    
+    nextPointBtn.addEventListener('click', () => {
+      currentPointIndex = (currentPointIndex + 1) % interestingPoints.length;
+      centerX = interestingPoints[currentPointIndex].x;
+      centerY = interestingPoints[currentPointIndex].y;
+      zoom = 1;
+      if (!isPaused) {
+        if (timeoutId) clearTimeout(timeoutId);
+        render();
+      }
+    });
+    
+    speedUpBtn.addEventListener('click', () => {
+      speed = Math.max(20, speed - 20);
+      speedDownBtn.disabled = false;
+      if (speed <= 20) speedUpBtn.disabled = true;
+    });
+    
+    speedDownBtn.addEventListener('click', () => {
+      speed = Math.min(500, speed + 20);
+      speedUpBtn.disabled = false;
+      if (speed >= 500) speedDownBtn.disabled = true;
+    });
+    
+    // 초기 실행
+    render();
+  </script>
+</body>
+</html>
